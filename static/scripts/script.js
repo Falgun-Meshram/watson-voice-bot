@@ -1,3 +1,6 @@
+// const TextToSpeechV1 = require('watson-developer-cloud/text-to-speech/v1');
+// const fs = require('fs');
+
 let conversationContext = '';
 let tokenSTT;
 let tokenTTS;
@@ -16,6 +19,7 @@ function initSTTService() {
       return response.text();
     })
     .then(function(_token) {
+      console.log(_token);
       tokenSTT = _token;
     })
     .catch(function(error) {
@@ -60,6 +64,7 @@ $(document).ready(function() {
       return response.text();
     })
     .then(function(_token) {
+      console.log(_token);
       tokenTTS = _token;
       $.ajax({
         url: '/api/conversation',
@@ -67,8 +72,20 @@ $(document).ready(function() {
         context: ''
       })
         .done(function(res) {
+          console.log(`res is ${JSON.stringify(res)}`);
           conversationContext = res.results.context;
           displayMsgDiv(res.results.responseText, 'bot');
+          // callConversation(res.results.respon);
+          // const textToSpeech = new TextToSpeechV1({
+          //   iam_apikey: '{apikey}',
+          //   url: 'https://stream-fra.watsonplatform.net/text-to-speech/api'
+          // });
+
+          // const synthesizeParams = {
+          //   text: res.resultIndex
+          //   accept: 'audio/wav',
+          //   voice: 'en-US_AllisonVoice'
+          // };
 
           // eslint-disable-next-line no-undef
           stream = WatsonSpeech.TextToSpeech.synthesize({
@@ -180,6 +197,115 @@ $('#stt2').click(function() {
   }
 });
 
+let gumStream;
+
+let rec;
+
+function startWSTTService() {
+  // eslint-disable-next-line no-undef
+
+  // stream = WatsonSpeech.SpeechToText.recognizeMicrophone({
+  //   token: tokenSTT,
+  //   object_mode: false,
+  //   model: 'en-US_NarrowbandModel',
+  //   keepMicrophone: true,
+  //   max_alternatives: 0,
+  //   // keywords_threshold: 1,
+  //   interim_results: false
+  // });
+
+  const constraints = {
+    audio: true,
+    video: false
+  };
+
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const audioContext = new AudioContext(); // new audio context to help us record
+
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then(function(stream) {
+      console.log('getUserMedia() success, stream created, initializing Recorder.js ...');
+
+      /* assign to gumStream for later use */
+      gumStream = stream;
+
+      /* use the stream */
+      const input = audioContext.createMediaStreamSource(stream);
+
+      /*
+     Create the Recorder object and configure to record mono sound (1 channel)
+     Recording 2 channels  will double the file size
+     */
+      rec = new Recorder(input, {
+        mimeType: 'audio/wav'
+      });
+
+      // start the recording process
+      rec.record();
+
+      console.log('Recording started');
+    })
+    .catch(function(err) {
+      // enable the record button if getUserMedia() fails
+      console.log(err);
+    });
+
+  // stream.setEncoding('utf8'); // get text instead of Buffers for on data events
+
+  // stream.on('data', function(data) {
+  //   console.log('Time Taken by STT:' + (new Date().getTime() / 1000 - currentTime));
+  //   displayMsgDiv(data, 'bot');
+  // callConversation(data);
+  // });
+
+  // stream.on('error', function(err) {
+  //   console.log(err);
+  //   $('#q').val('Error opening the STT Stream ...');
+  // });
+
+  // stream.on('listening', function() {
+  //   console.log('received event listening');
+  //   $('#q').val('I am listening ...');
+  // });
+  $('#q').val('I am listening ...');
+}
+
+function stopWSTTService() {
+  // stream.stop();
+  currentTime = new Date().getTime() / 1000;
+
+  rec.stop();
+
+  // stop microphone access
+  gumStream.getAudioTracks()[0].stop();
+
+  // create the wav blob and pass it on to createDownloadLink
+  rec.exportWAV(createDownloadLink);
+}
+
+function createDownloadLink(blob) {
+  const formData = new FormData();
+  const recording = new Blob([blob], {
+    type: 'audio/wav'
+  });
+  formData.append('data', recording);
+
+  const xhr = new XMLHttpRequest();
+  xhr.onload = function(e) {
+    if (this.readyState === 4) {
+      console.log('Server returned: ', e.target.responseText);
+      const res = JSON.parse(e.target.responseText);
+      displayMsgDiv(res.results[0].alternatives[0].transcript, 'user');
+      callConversation(res.results[0].alternatives[0].transcript);
+    }
+  };
+  xhr.open('POST', 'http://localhost:8080/https://gateway-wdc.watsonplatform.net/speech-to-text/api/v1/recognize');
+  xhr.setRequestHeader('Authorization', 'Basic ' + btoa('apikey' + ':' + process.env.STT_API_KEY));
+  xhr.setRequestHeader('Content-Type', 'audio/wav');
+  xhr.send(formData.get('data'));
+}
+
 function callConversation(res) {
   $('#q').attr('disabled', 'disabled');
 
@@ -200,41 +326,4 @@ function callConversation(res) {
     .fail(function(jqXHR, e) {
       console.log('Error: ' + jqXHR.responseText);
     });
-}
-
-function startWSTTService() {
-  // eslint-disable-next-line no-undef
-  stream = WatsonSpeech.SpeechToText.recognizeMicrophone({
-    token: tokenSTT,
-    object_mode: false,
-    model: 'en-US_NarrowbandModel',
-    keepMicrophone: true,
-    max_alternatives: 0,
-    // keywords_threshold: 1,
-    interim_results: false
-  });
-
-  stream.setEncoding('utf8'); // get text instead of Buffers for on data events
-
-  stream.on('data', function(data) {
-    console.log('Time Taken by STT:' + (new Date().getTime() / 1000 - currentTime));
-    displayMsgDiv(data, 'bot');
-    callConversation(data);
-  });
-
-  stream.on('error', function(err) {
-    console.log(err);
-    $('#q').val('Error opening the STT Stream ...');
-  });
-
-  stream.on('listening', function() {
-    console.log('received event listening');
-    $('#q').val('I am listening ...');
-  });
-  $('#q').val('I am listening ...');
-}
-
-function stopWSTTService() {
-  stream.stop();
-  currentTime = new Date().getTime() / 1000;
 }
