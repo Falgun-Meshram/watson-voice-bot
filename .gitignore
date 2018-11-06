@@ -5,6 +5,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+#Audio files
+*.wav
+
+#PIP Virtual Environment
+.venv
+
+#CSV
+*.csv
+
 # Runtime data
 pids
 *.pid
@@ -35,6 +44,7 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+flask/
 
 # TypeScript v1 declaration files
 typings/
