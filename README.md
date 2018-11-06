@@ -1,5 +1,14 @@
 [![Build Status](https://travis-ci.org/IBM/watson-voice-bot.svg?branch=master)](https://travis-ci.org/IBM/watson-voice-bot)
 
+# Changelog
+
+In this fork I have updated the code to conform with the token-based Identity and Access Management (IAM) authentication.
+It also requires a NodeJs based reverse proxy solution to resolve the CORS issues.
+Here are the steps required to use the reverse proxy:
+  1. Clone the following repository: https://github.com/Rob--W/cors-anywhere
+  2. Install the required dependencies using "npm install"
+  3. Start the server using "node server.js"
+
 # Create a web based chatbot with voice input and output
 
 In this code pattern we will create a web based chat bot, but the twist here is that we'll be using voice input and output. For the conversation dialog we'll of course be using Watson Assistant, but we'll also be using Watson Speech To Text to capture the user's voice, and lastly we'll use Watson Text To Speech to playback the chatbots response to the user. The web application itself is built on top of JQuery and Python Flask.
