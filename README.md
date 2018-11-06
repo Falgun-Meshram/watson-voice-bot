@@ -169,10 +169,12 @@ ASSISTANT_URL=<add_assistant_url>
 # Watson Speech To Text
 SPEECHTOTEXT_USER=<add_stt_username>
 SPEECHTOTEXT_PASSWORD=<add stt password>
-
+STT_API_KEY=<add the stt api key>
 # Watson Text To SpeechToText
 TEXTTOSPEECH_USER=<add tts username>
 TEXTTOSPEECH_PASSWORD=<add tts password>
+TTS_API_KEY=<add the tts api key>
+
 ```
 
 ### 5. Run the application
